@@ -2,14 +2,9 @@
 
 set -e
 
-mode="$1"
-command="$2"
-name="$3"
-
 LIFE_DIR="$HOME/life"
 mkdir -p "$LIFE_DIR"
 
-echo "$0 , $mode , $command" , $name
 # First command
 get_version() {
 	echo 'life version 0.0'
@@ -17,40 +12,58 @@ get_version() {
 }
 
 get_help() {
-	echo -e "life: life [command] [name]
+	echo -e "life: life [mode] [command] [name]
 	\tTake and manage notes in plain text.\n
+	\tModes:
+		notes: Note mode.
 	\tCommands:
-	\t  add [name]: adds a new note.
-	\t  del [name]: remove a note.
-	\t  read [name]: reads a note.
-	\t  list: list all notes."
+	\t  add: Adds a new note.
+	\t  del: Remove a note.
+	\t  read: Reads a note.
+	\t  list: List all notes."
 }
 
 notes_command() {
 	DIR="$LIFE_DIR/notes"
 	mkdir -p "$DIR"
 
-	echo "$command"
+	add_note() {
+		if [ -z "$1" ] ; then
+			echo "You must enter the title for the note"
+			exit 1
+		else
+			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+			FILE="$DIR/$SLUG.txt"
 
-	case $command in
-		add)
-			[ -z "$name" ] && echo "You must enter the title for the new note" 
+			echo "$1" > $FILE
 
-			DATE=$(date +%d-%m-%Y)
-			echo "$DATE"
-			SLUG=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-			echo "$SLUG"
-			FILE="$DIR/$DATE-$SLUG.txt"
-			echo "$FILE"
+			"$EDITOR" "$FILE"
+		fi
+	}
 
-			echo "Title: $name" > $FILE
-			echo
-			echo "Date: $DATE"
-			echo
-			;;
-		*)
-			echo "No parameter"
-			;;
+	list_note() {
+		echo ""
+		for i in ~/life/notes/* ; do
+			head -1 "$i"
+		done
+	}
+
+	read_note() {
+		echo ""
+		if [ -z "$1" ] ; then
+			echo "Please select the note you want to read, use 'life notes' or 'life notes list' for listing your notes"
+			exit 1
+		else
+			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+			cat "$DIR"/"$SLUG".txt
+		fi
+	}
+
+	case $1 in
+		add) shift ; add_note "$@" ;;
+		list) list_note ;;
+		read) shift ; read_note "$@" ;;
+		*) list_note ;;
 	esac
 }
 
@@ -59,6 +72,6 @@ case "$1" in
 	-v) get_version ;;
 	--help) get_help ;;
 	-h) get_help ;;
-	notes) notes_command ;;
+	notes) shift; notes_command "$@" ;;
 	*) get_help ;;
 esac

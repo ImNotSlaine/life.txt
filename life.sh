@@ -32,30 +32,55 @@ notes_command() {
 			echo "You must enter the title for the note"
 			exit 1
 		else
+			DATE=$(date +%d-%m-%Y-%H-%M)
 			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 			FILE="$DIR/$SLUG.txt"
 
-			echo "$1" > $FILE
+			echo "$DATE" > $FILE
+			echo "" >> $FILE
+			echo "$1" >> $FILE
 
 			"$EDITOR" "$FILE"
+
+			echo "Note created"
 		fi
 	}
 
 	list_note() {
 		echo ""
 		for i in ~/life/notes/* ; do
-			head -1 "$i"
+			head -n +3 "$i" | tail -n +3
 		done
 	}
 
 	read_note() {
 		echo ""
 		if [ -z "$1" ] ; then
-			echo "Please select the note you want to read, use 'life notes' or 'life notes list' for listing your notes"
+			echo "Please select the note you want to read"
 			exit 1
 		else
 			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-			cat "$DIR"/"$SLUG".txt
+			tail -n +3 "$DIR"/"$SLUG".txt
+		fi
+	}
+
+	edit_note() {
+		if [ -z "$1" ] ; then
+			echo "Please select the note you want to edit"
+			exit 1
+		else
+			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+			"$EDITOR" "$DIR"/"$SLUG".txt
+		fi
+	}
+
+	delete_note() {
+		if [ -z "$1" ] ; then
+			echo "Please select the note you want to remove"
+			exit 1
+		else
+			SLUG=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+			rm "$DIR"/"$SLUG".txt
 		fi
 	}
 
@@ -63,6 +88,8 @@ notes_command() {
 		add) shift ; add_note "$@" ;;
 		list) list_note ;;
 		read) shift ; read_note "$@" ;;
+		edit) shift ; edit_note "$@" ;;
+		remove) shift ; delete_note "$@" ;;
 		*) list_note ;;
 	esac
 }

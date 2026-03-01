@@ -13,10 +13,10 @@ get_version() {
 
 # Outputs some help for the program
 get_help() {
-	echo -e "life: life [mode] [command] [name]
+	echo -e "life: life [mode] [flag] [command] [name]
 	\tTake and manage notes in plain text.\n
 	\tModes:
-		notes: Note mode.
+	\t  notes: Note mode.\n
 	\tCommands:
 	\t  add: Adds a new note.
 	\t		-p: Adds a priority to the note (4 by default).
@@ -78,10 +78,54 @@ notes_command() {
 	}
 
 	list_note() {
-		echo ""
-		for i in ~/life/notes/* ; do
-			head -n +4 "$i" | tail -n +4
+		listm="abc"
+
+		while getopts "pd" opt; do
+			case $opt in
+				p) listm="prio" ;;
+				d) listm="date" ;;
+				*) echo "Property not valid" ;;
+			esac
 		done
+
+		set -- "$DIR"/*.txt
+
+		[ -e "$1" ] || {
+			echo "No notes created"
+			exit 1
+		}
+
+		case "$listm" in
+			abc)
+				echo "Notes listed by name"
+				echo
+				# Orders by name
+				for file in "$DIR"/*.txt; do
+					sed -n '4p' "$file"
+				done | sort
+				;;
+			prio)
+				echo "Notes listed by priority"
+				echo
+				# Orders by prio
+				for file in "$DIR"/*.txt; do
+					awk 'NR==1 {gsub("#", "", $0); p=$0}
+						 NR==4 {print p "\t" $0}' "$file"
+				done | sort -n | awk -F'\t' '{printf "[%s] %s\n", $1, $2}'
+				;;
+			date)
+				echo "Notes listed by date created"
+				echo
+				# Orders by date
+				for file in "$DIR"/*.txt; do
+					awk 'NR==2 {d=$0}
+						 NR==4 {print d "\t" $0}' "$file"
+				done | sort | cut -f2
+				;;
+			*) 
+				echo "Not implemented" ;;
+		esac
+		echo ""
 	}
 
 	read_note() {
@@ -123,11 +167,11 @@ notes_command() {
 
 	case "$1" in
 		add) shift ; add_note "$@" ;;
-		list) list_note ;;
+		list) list_note "$@" ;;
 		read) shift ; read_note "$@" ;;
 		edit) shift ; edit_note "$@" ;;
 		del) shift ; delete_note "$@" ;;
-		*) list_note ;;
+		*) list_note "$@" ;;
 	esac
 }
 
